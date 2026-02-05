@@ -1,0 +1,96 @@
+syntax = "proto3";
+
+package vdcs.v1;
+
+option go_package = "github.com/rrb115/vdcs/proto/vdcs;vdcspb";
+
+// Operation defines the type of mutation.
+enum Operation {
+  OPERATION_UNSPECIFIED = 0;
+  OPERATION_SET = 1;
+  OPERATION_DELETE = 2;
+}
+
+// ConfigEntry is an immutable record of a configuration change.
+// This is the fundamental unit of the append-only log.
+message ConfigEntry {
+  // Index is the monotonic sequence number of the entry in the log.
+  uint64 index = 1;
+
+  // Timestamp is the Unix nanos when the entry was created.
+  int64 timestamp = 2;
+
+  // AuthorID is the identifier of the entity making the change (e.g., public key or user ID).
+  string author_id = 3;
+
+  // Key is the configuration key being modified.
+  string key = 4;
+
+  // ValueHash is the SHA-256 hash of the value.
+  // We store the hash in the log entry to keep the log lightweight and
+  // to allow separate heavy value storage if needed (though v1 may inline values).
+  // For v1, we might want to include the Value itself if small, but the spec says "ValueHash".
+  // Let's stick to the spec strictly: "ValueHash".
+  // Note: If we only store ValueHash, we need a way to transport the actual Value.
+  // The spec's "Materialized State" implies we have the values.
+  // Let's add `bytes value` as an optional field for transport, but the signature
+  // should arguably cover the semantic content.
+  // The User Spec said: "ValueHash [32]byte".
+  // We will adhere to that for the signed envelope.
+  bytes value_hash = 5;
+
+  // Operation is the type of change (SET or DELETE).
+  Operation operation = 6;
+
+  // PrevHash is the SHA-256 hash of the previous log entry.
+  // This creates the hash chain.
+  bytes prev_hash = 7;
+
+  // EntryHash is the SHA-256 hash of this entry (excluding Signature?).
+  // Usually this is computed, not stored, or stored for convenience.
+  // The signature covers this hash.
+  bytes entry_hash = 8;
+
+  // Signature is the Ed25519 signature of EntryHash by AuthorID.
+  bytes signature = 9;
+
+  // ... (previous fields)
+  bytes value = 10;
+}
+
+message ConfigState {
+  uint64 version = 1;
+  bytes state_root = 2;
+  bytes last_entry_hash = 3;
+}
+
+// --- Service Definition ---
+
+service VDCS {
+  // ProposeEntry submits a new configuration entry.
+  rpc ProposeEntry(ConfigEntry) returns (ProposeResponse);
+  
+  // GetLatestRoot returns the current Merkle root and version.
+  rpc GetLatestRoot(Empty) returns (ConfigState);
+  
+  // GetProof returns a value and inclusion proof for a key.
+  rpc GetProof(GetProofRequest) returns (GetProofResponse);
+}
+
+message Empty {}
+
+message ProposeResponse {
+  // Success or error details are in gRPC status.
+}
+
+message GetProofRequest {
+  string key = 1;
+}
+
+message GetProofResponse {
+  string key = 1;
+  bytes value_hash = 2;
+  repeated bytes siblings = 3;
+  repeated bool is_left = 4;
+}
+
