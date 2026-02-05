@@ -9,6 +9,7 @@ import (
 
 	"github.com/rrb115/vdcs/internal/crypto"
 	"github.com/rrb115/vdcs/internal/log"
+	"github.com/rrb115/vdcs/internal/storage"
 	vdcspb "github.com/rrb115/vdcs/proto"
 )
 
@@ -29,8 +30,12 @@ func TestNodeLifecycle(t *testing.T) {
 	}
 
 	// 1. Start Node 1
+	st, err := storage.NewFileStore(storagePath)
+	if err != nil {
+		t.Fatalf("failed to create store: %v", err)
+	}
 	cfg := Config{
-		StoragePath: storagePath,
+		Store:       st,
 		TrustedKeys: trustedKeys,
 	}
 	node, err := NewNode(cfg)
@@ -68,8 +73,15 @@ func TestNodeLifecycle(t *testing.T) {
 
 	// 3. Restart Node
 	if err := node.Close(); err != nil {
+		// Note: node.Close() closes the store.
 		t.Fatal(err)
 	}
+
+	st2, err := storage.NewFileStore(storagePath)
+	if err != nil {
+		t.Fatalf("failed to open store: %v", err)
+	}
+	cfg.Store = st2
 
 	node2, err := NewNode(cfg)
 	if err != nil {

@@ -1,12 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/ed25519"
 	"encoding/hex"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
@@ -35,8 +38,61 @@ func main() {
 		runGet(args)
 	case "audit":
 		runAudit(args)
+	case "monitor":
+		runMonitor(args)
 	default:
 		log.Fatalf("unknown command: %s", cmd)
+	}
+}
+
+func runMonitor(args []string) {
+	monCmd := flag.NewFlagSet("monitor", flag.ExitOnError)
+	target := monCmd.String("target", "", "Target URL to report state")
+	interval := monCmd.Duration("interval", 0, "Polling interval (0 for one-shot)")
+
+	if err := monCmd.Parse(args); err != nil {
+		log.Fatal(err)
+	}
+
+	if *target == "" {
+		log.Fatal("-target is required")
+	}
+
+	client := connect()
+
+	for {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		state, err := client.GetLatestRoot(ctx, &vdcspb.Empty{})
+		cancel()
+		if err != nil {
+			log.Printf("ERROR: Failed to fetch state: %v", err)
+			if *interval == 0 {
+				os.Exit(1)
+			}
+			time.Sleep(*interval)
+			continue
+		}
+
+		payload := map[string]interface{}{
+			"index":     state.Version,
+			"root_hash": hex.EncodeToString(state.StateRoot),
+			"timestamp": time.Now().Unix(),
+		}
+
+		jsonBody, _ := json.Marshal(payload)
+		resp, err := http.Post(*target, "application/json", bytes.NewBuffer(jsonBody))
+		if err != nil {
+			log.Printf("ERROR: Failed to report to monitor: %v", err)
+		} else {
+			resp.Body.Close()
+			fmt.Printf("[%s] Reported state (Index: %d, Root: %x) to %s. Status: %s\n",
+				time.Now().Format(time.RFC3339), state.Version, state.StateRoot, *target, resp.Status)
+		}
+
+		if *interval == 0 {
+			break
+		}
+		time.Sleep(*interval)
 	}
 }
 

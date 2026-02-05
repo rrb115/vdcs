@@ -22,7 +22,7 @@ type Node struct {
 
 // Config holds node configuration.
 type Config struct {
-	StoragePath string
+	Store       storage.Store
 	TrustedKeys map[string][]byte // AuthorID -> PubKey
 }
 
@@ -36,21 +36,21 @@ func NewNode(cfg Config) (*Node, error) {
 
 	sm := state.NewStateMachine()
 
-	st, err := storage.NewFileStore(cfg.StoragePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open storage: %w", err)
+	if cfg.Store == nil {
+		return nil, fmt.Errorf("storage store is required in config")
 	}
 
 	n := &Node{
 		log:         l,
 		state:       sm,
-		store:       st,
+		store:       cfg.Store,
 		trustedKeys: cfg.TrustedKeys,
 	}
 
 	// 2. Replay log
 	if err := n.replay(); err != nil {
-		st.Close()
+		// Do not close store here as it was passed in. caller handles lifecycle.
+		// However, NewNode failing implies we shouldn't use the node.
 		return nil, fmt.Errorf("failed to replay log: %w", err)
 	}
 
