@@ -497,7 +497,7 @@ const file_proto_vdcs_proto_rawDesc = "" +
 	"\x04VDCS\x12>\n" +
 	"\fProposeEntry\x12\x14.vdcs.v1.ConfigEntry\x1a\x18.vdcs.v1.ProposeResponse\x125\n" +
 	"\rGetLatestRoot\x12\x0e.vdcs.v1.Empty\x1a\x14.vdcs.v1.ConfigState\x12?\n" +
-	"\bGetProof\x12\x18.vdcs.v1.GetProofRequest\x1a\x19.vdcs.v1.GetProofResponseB*Z(github.com/rrb115/vdcs/proto/vdcs;vdcspbb\x06proto3"
+	"\bGetProof\x12\x18.vdcs.v1.GetProofRequest\x1a\x19.vdcs.v1.GetProofResponseB%Z#github.com/rrb115/vdcs/proto;vdcspbb\x06proto3"
 
 var (
 	file_proto_vdcs_proto_rawDescOnce sync.Once

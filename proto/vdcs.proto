@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package vdcs.v1;
 
-option go_package = "github.com/rrb115/vdcs/proto/vdcs;vdcspb";
+option go_package = "github.com/rrb115/vdcs/proto;vdcspb";
 
 // Operation defines the type of mutation.
 enum Operation {
