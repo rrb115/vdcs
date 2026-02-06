@@ -17,6 +17,15 @@
 
 ## Getting Started
 
+### Quick Start (All OS)
+Run the automated runner which builds binaries, generates keys, and starts the node:
+```bash
+go run ./cmd/vdcs-runner
+```
+
+### Manual Setup
+If you prefer to run steps manually:
+
 ### 1. Build
 ```bash
 go build -o ./bin/vdcs-node ./cmd/vdcs-node
