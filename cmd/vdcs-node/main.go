@@ -16,10 +16,7 @@ import (
 
 func main() {
 	var (
-		port = flag.Int("port", 9090, "gRPC server port")
-		// Deprecated: dataDir is legacy for file storage or base for sqlite?
-		// User said: "vdcs-node --storage=postgres or vdcs-node --storage=scylladb".
-		// Also: "Default: SQLite (Embedded...)"
+		port        = flag.Int("port", 9090, "gRPC server port")
 		dataDir     = flag.String("data", "./data", "Data directory (for log.bin or vdcs.db)")
 		trustedKeys = flag.String("trusted-keys", "", "Comma-separated list of trusted public keys (hex)")
 		storageType = flag.String("storage", "sqlite", "Storage type: sqlite, file")
@@ -81,8 +78,10 @@ func main() {
 	// Note: n.Close() will close the store.
 
 	// 4. Start Server
+
 	srv := server.NewServer(n)
 	log.Printf("Starting VDCS node on port %d...", *port)
+
 	if err := srv.Start(*port); err != nil {
 		log.Fatalf("server failed: %v", err)
 	}

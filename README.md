@@ -18,27 +18,50 @@
 ## Getting Started
 
 ### 1. Build
-
 ```bash
-go build -o bin/vdcs-node ./cmd/vdcs-node
-go build -o bin/vdcs-cli ./cmd/vdcs-cli
+go build -o ./bin/vdcs-node ./cmd/vdcs-node
+go build -o ./bin/vdcs-cli ./cmd/vdcs-cli
+go build -o ./bin/key-gen ./cmd/key-gen
 ```
 
-### 2. Run Node
-
+### 2. Generate Identity
+VDCS uses Ed25519 keys for signing.
 ```bash
-# Start with a trusted admin public key
-./bin/vdcs-node -port 9090 -data ./data -trusted-keys "<YOUR_PUBLIC_KEY_HEX>"
+go run ./cmd/key-gen
+# Output:
+# Private Key (Hex): <PRIV_KEY>
+# Public Key (Hex):  <PUB_KEY>
 ```
 
-### 3. Use CLI
-
+### 3. Start the Node
+By default, VDCS uses SQLite for storage. Storage is persistent in `./data`.
 ```bash
-# Set a value (requires private key)
-./bin/vdcs-cli set -key "my-config" -value "true" -author "admin" -priv-key "<YOUR_PRIVATE_KEY_HEX>"
+# Start with your Public Key as the trusted admin
+./bin/vdcs-node -trusted-keys <PUB_KEY>
+```
 
-# Get and Verify (verifies Merkle proof automatically)
-./bin/vdcs-cli get -key "my-config"
+**Options:**
+- `-storage file`: Use the legacy flat-file storage instead of SQLite.
+- `-port 9091`: Change the gRPC listening port.
+
+### 4. Write Data
+```bash
+./bin/vdcs-cli set -key "database/host" -value "10.0.0.5" -author "admin" -priv-key <PRIV_KEY>
+```
+
+### 5. Verify Data (Client Side)
+The client fetches the `RootHash` and verifies the inclusion proof locally.
+```bash
+./bin/vdcs-cli get -key "database/host"
+# Output:
+# Trusted Root (Version 1): <ROOT_HASH>
+# Verified Value Hash: <VAL_HASH>
+```
+
+### 6. Monitor (Optional)
+To detect split-view attacks, run a monitor that reports the state to an external service.
+```bash
+./bin/vdcs-cli monitor -target https://monitor.example.com -interval 1m
 ```
 
 ## Consensus
