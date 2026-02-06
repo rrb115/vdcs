@@ -73,6 +73,43 @@ To detect split-view attacks, run a monitor that reports the state to an externa
 ./bin/vdcs-cli monitor -target https://monitor.example.com -interval 1m
 ```
 
+## Use Cases
+
+### 1. AI Agent Governance
+Store system prompts and safety constraints in VDCS. Agents can cryptographically verify that their instructions haven't been tampered with by a compromised middleman or "jailbroken" via prompt injection in the delivery pipeline.
+- *Key*: `agents/finance-bot/v1/system-prompt`
+- *Value*: "You are a helpful assistant. Do not output financial advice..."
+
+### 2. Secure Feature Flags
+Traditional feature flag services require blind trust. If the flag provider is compromised, they can disable security features or enable backdoors. VDCS ensures that your application only accepts flag states signed by your offline keys.
+
+### 3. Supply Chain Security
+Store the SHA-256 hashes of your build artifacts (binaries, docker images). Deployment agents verify the artifact hash against the VDCS record before deploying.
+- *Key*: `releases/ios/v1.2.0`
+- *Value*: `sha256:8f43...`
+
+### 4. Decentralized Configuration (D-Config)
+For distributed systems that need a shared source of truth without a centralized database that everyone trusts blindly.
+
+## Integration & Tailoring
+
+VDCS is built as a modular "Root of Trust".
+
+### Customizing Storage
+The `internal/storage` package defines a `Store` interface. You can swap the default SQLite/File storage for:
+- **Redis/Etcd**: For higher write throughput.
+- **S3/GCS**: for infinite archive storage of the Merkle Log.
+
+### Client Integration
+The core protocol is defined in `proto/vdcs.proto`. You can generate clients for any language:
+1.  **Generate Code**: `protoc --python_out=. --grpc_python_out=. proto/vdcs.proto`
+2.  **Verify Proofs**: Implement the Merkle Path verification logic (see `internal/crypto/merkle.go`) in your target language. We recommend porting the `VerifyInclusion` function for strict client-side validation.
+
+### Public Auditing
+For high-stakes environments, you should publish the "Root Hash" to a public ledger (e.g., Ethereum smart contract or Twitter/X bot).
+- Use the `monitor` command logic to periodically fetch the latest root and publish it.
+- This ensures that history cannot be rewritten even if the VDCS server itself is compromised.
+
 ## Consensus
 *Current Version (v1)*: Single trusted log authority.
 *Future*: Raft-based consensus for high availability.
