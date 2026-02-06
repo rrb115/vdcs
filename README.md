@@ -110,6 +110,21 @@ For high-stakes environments, you should publish the "Root Hash" to a public led
 - Use the `monitor` command logic to periodically fetch the latest root and publish it.
 - This ensures that history cannot be rewritten even if the VDCS server itself is compromised.
 
+## Limitations & Future Work
+
+### 1. Missing: Fine-Grained Access Control (RBAC)
+Currently, **VDCS is binary: You are either a Trusted Admin or you are not.**
+Anyone with a trusted private key can modify *any* key in the system.
+*   *Impact*: Suitable for single-team projects or microservices, but not for multi-tenant enterprise environments where different teams need write access to only their specific namespaces.
+
+### 2. Achilles' Heel: High Availability
+The current implementation runs as a **Single Primary Node**.
+*   *The Risk*: If the node goes down, the configuration is read-only (clients can verify cached data) but no new updates can be made until the node is restored.
+*   *Mitigation*: The `store` interface allows for distributed backends (like etcd), but the Merkle Tree is currently maintained in-memory on the single leader.
+
+### 3. Secret Management
+VDCS optimizes for verification, not confidentiality. Values are stored as plain bytes (or hashes). It does **not** natively encrypt secrets at rest or hide them from read-access clients. Do not store raw API keys unless you encrypt them client-side before sending.
+
 ## Consensus
 *Current Version (v1)*: Single trusted log authority.
 *Future*: Raft-based consensus for high availability.
