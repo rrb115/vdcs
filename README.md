@@ -15,6 +15,13 @@
 *   **Client**: The CLI (and future SDK) that proposes signed changes and verifies proofs.
 *   **Protocol**: A custom Protobuf-based protocol ensuring strict verification.
 
+## Prerequisites
+1.  **Go 1.24+**: [Download Go](https://go.dev/dl/).
+2.  **C Compiler**: Required for SQLite support (CGO).
+    *   **macOS**: `xcode-select --install`
+    *   **Linux**: `sudo apt install build-essential`
+    *   **Windows**: [TDM-GCC](https://jmeubank.github.io/tdm-gcc/) or MinGW.
+
 ## Getting Started
 
 ### Quick Start
