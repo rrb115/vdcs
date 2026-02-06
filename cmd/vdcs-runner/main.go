@@ -38,6 +38,15 @@ func main() {
 	keyFile := ".keys"
 	if _, err := os.Stat(keyFile); os.IsNotExist(err) {
 		fmt.Println("Generating new keys...")
+
+		// SAFETY: If we are generating new keys, the old data is now unverifiable
+		// (unless the user backed up the old keys). We must clear the data dir
+		// to prevent "replay validation failed" errors on startup.
+		fmt.Println("Clearing stale data (data/)...")
+		if err := os.RemoveAll("data"); err != nil {
+			log.Printf("Warning: failed to clear data dir: %v", err)
+		}
+
 		keyGenPath := filepath.Join(binDir, "key-gen")
 		if runtime.GOOS == "windows" {
 			keyGenPath += ".exe"
@@ -94,6 +103,10 @@ func main() {
 	absNodePath, _ := filepath.Abs(nodePath)
 
 	fmt.Println("Starting VDCS Node...")
+	fmt.Println("\n--- Quick Start Commands (Run in new terminal) ---")
+	fmt.Printf("./bin/vdcs-cli set -key \"demo/hello\" -value \"world\" -author \"admin\" -priv-key %s\n", privKey)
+	fmt.Printf("./bin/vdcs-cli get -key \"demo/hello\"\n")
+	fmt.Println("--------------------------------------------------\n")
 	// Pass stdout/stderr to see logs
 	nodeCmd := exec.Command(absNodePath, "-trusted-keys", pubKey)
 	nodeCmd.Stdout = os.Stdout
