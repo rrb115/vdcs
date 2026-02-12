@@ -22,6 +22,25 @@
     *   **Linux**: `sudo apt install build-essential`
     *   **Windows**: [TDM-GCC](https://jmeubank.github.io/tdm-gcc/) or MinGW.
 
+(some questions that may arise)
+why ed25519 over ecdsa?
+ed25519 provides deterministic signatures (no nounce-reuse), faster verification, smaller keys and signatures, and is generally safer against implementation mistakes.
+
+how do you prevent equivocation?
+By maintaining an append-only hash-linked log with globally visible root hashes and optional external root anchoring. monitors compare observed roots and detect split-view attacks if different clients are shown inconsistent histories.
+
+how would you implement gossip-based consistency?
+clients and monitors periodically exchange signed root hashes with peers. if a node presents conflicting roots for the same version, peers detect divergence and flag equivocation. this kinda mirrors certificate transparency-style gossip protocols.
+
+what changes when you move to raft?
+the single trusted log authority becomes a replicated state machine. log entries are proposed via raft consensus, providing fault tolerance and leader election. the merkle tree must be deterministically derived from the replicated log to ensure identical roots across nodes.
+
+can merkle trees handle deletion?
+not naturally in append-only transparency logs. deletion breaks immutability. instead, you append a tombstone entry marking a key as revoked while preserving full history.
+
+what is your consistency model?
+currently strong consistency under a single primary authority (effectively linearisable writes). reads are verifiable against the latest known root, but without consensus it is not byzantine fault tolerant.
+
 ## Getting Started
 
 ### Quick Start
